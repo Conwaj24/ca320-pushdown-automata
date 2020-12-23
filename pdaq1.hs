@@ -23,9 +23,28 @@ data Result = Accept | Reject deriving (Show, Enum)
 instance Eq Result where
    x == y = fromEnum x == fromEnum y
 
+do_state_transition :: Configuration -> CState -> NState -> Configuration
+do_state_transition (state, i, s) cstate nstate | state == cstate = (nstate, i, s)
+
+do_input_transition :: Configuration -> IChar -> Configuration
+do_input_transition c "" = c
+do_input_transition (st, input, s) ichar | [head input] == ichar = (st, tail input, s)
+
+do_stack_transition :: Configuration -> SChar -> PChar -> Configuration
+do_stack_transition (s, i, stack) "" pchar =  (s, i, pchar ++ stack)
+do_stack_transition (s, i, stack) schar pchar | [head stack] == schar =  (s, i, pchar ++ tail stack)
+
+do_transition :: Configuration -> Transition -> Configuration
+do_transition (state, input, stack) ((cstate, cinput, cstack), (nstate, nstack)) =
+   do_stack_transition (
+      do_input_transition (
+         do_state_transition (state, input, stack) cstate nstate
+      ) cinput
+   ) cstack nstack
+
 final_configurations :: Configuration -> [Transition] -> [Configuration]
 final_configurations (state, "", stack) _ = [(state, "", stack)]
---final_configurations (state, input, stack) transitions = -- to be continued
+final_configurations c ts = -- to be continued
 
 contains :: Eq a => [a] -> a -> Bool
 contains [] _ = False
