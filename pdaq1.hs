@@ -23,28 +23,41 @@ data Result = Accept | Reject deriving (Show, Enum)
 instance Eq Result where
    x == y = fromEnum x == fromEnum y
 
-do_state_transition :: Configuration -> CState -> NState -> Configuration
-do_state_transition (state, i, s) cstate nstate | state == cstate = (nstate, i, s)
+do_state_transition :: Maybe Configuration -> CState -> NState -> Maybe Configuration
+do_state_transition Nothing _ _ = Nothing
+do_state_transition (Just (state, i, s)) cstate nstate
+   | state == cstate = Just (nstate, i, s)
+   | otherwise = Nothing
 
-do_input_transition :: Configuration -> IChar -> Configuration
+do_input_transition :: Maybe Configuration -> IChar -> Maybe Configuration
+do_input_transition Nothing _ = Nothing
 do_input_transition c "" = c
-do_input_transition (st, input, s) ichar | [head input] == ichar = (st, tail input, s)
+do_input_transition (Just (st, input, s)) ichar
+   | [head input] == ichar = Just (st, tail input, s)
+   | otherwise = Nothing
 
-do_stack_transition :: Configuration -> SChar -> PChar -> Configuration
-do_stack_transition (s, i, stack) "" pchar =  (s, i, pchar ++ stack)
-do_stack_transition (s, i, stack) schar pchar | [head stack] == schar =  (s, i, pchar ++ tail stack)
+do_stack_transition :: Maybe Configuration -> SChar -> PChar -> Maybe Configuration
+do_stack_transition Nothing _ _ = Nothing
+do_stack_transition (Just (s, i, stack)) "" pchar =  Just (s, i, pchar ++ stack)
+do_stack_transition (Just (s, i, stack)) schar pchar
+   | [head stack] == schar =  Just (s, i, pchar ++ tail stack)
+   | otherwise = Nothing
 
-do_transition :: Configuration -> Transition -> Configuration
+do_transition :: Configuration -> Transition -> Maybe Configuration
 do_transition (state, input, stack) ((cstate, cinput, cstack), (nstate, nstack)) =
    do_stack_transition (
       do_input_transition (
-         do_state_transition (state, input, stack) cstate nstate
+         do_state_transition (Just (state, input, stack)) cstate nstate
       ) cinput
    ) cstack nstack
 
+do_transitions :: Configuration -> [Transition] -> [Configuration]
+do_transitions _ [] = []
+-- do_transitions c ts = 
+
 final_configurations :: Configuration -> [Transition] -> [Configuration]
 final_configurations (state, "", stack) _ = [(state, "", stack)]
-final_configurations c ts = -- to be continued
+-- final_configurations c ts = 
 
 contains :: Eq a => [a] -> a -> Bool
 contains [] _ = False
