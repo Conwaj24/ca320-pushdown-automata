@@ -32,6 +32,7 @@ do_state_transition (Just (state, i, s)) cstate nstate
 do_input_transition :: Maybe Configuration -> IChar -> Maybe Configuration
 do_input_transition Nothing _ = Nothing
 do_input_transition c "" = c
+do_input_transition (Just (_, "", _)) _ = Nothing
 do_input_transition (Just (st, input, s)) ichar
    | [head input] == ichar = Just (st, tail input, s)
    | otherwise = Nothing
@@ -39,6 +40,7 @@ do_input_transition (Just (st, input, s)) ichar
 do_stack_transition :: Maybe Configuration -> SChar -> PChar -> Maybe Configuration
 do_stack_transition Nothing _ _ = Nothing
 do_stack_transition (Just (s, i, stack)) "" pchar =  Just (s, i, pchar ++ stack)
+do_stack_transition (Just (_, _, "")) _ pchar =  Nothing
 do_stack_transition (Just (s, i, stack)) schar pchar
    | [head stack] == schar =  Just (s, i, pchar ++ tail stack)
    | otherwise = Nothing
@@ -53,11 +55,13 @@ do_transition (state, input, stack) ((cstate, cinput, cstack), (nstate, nstack))
 
 do_transitions :: Configuration -> [Transition] -> [Configuration]
 do_transitions _ [] = []
--- do_transitions c ts = 
+do_transitions c ts = case do_transition c (head ts) of
+                        Nothing -> do_transitions c (tail ts)
+                        Just nc -> nc : do_transitions c (tail ts)
 
 final_configurations :: Configuration -> [Transition] -> [Configuration]
 final_configurations (state, "", stack) _ = [(state, "", stack)]
--- final_configurations c ts = 
+final_configurations c ts = concat (map (\confs -> final_configurations confs ts) (do_transitions c ts))
 
 contains :: Eq a => [a] -> a -> Bool
 contains [] _ = False
