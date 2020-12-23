@@ -1,6 +1,6 @@
 #!/usr/bin/env ghci
 
-type State = Int
+type State = Integer
 type IState = State -- Initial state
 type AState = State -- Accepted state
 type CState = State -- Current state
@@ -60,7 +60,9 @@ do_transitions c ts = case do_transition c (head ts) of
                         Just nc -> nc : do_transitions c (tail ts)
 
 final_configurations :: Configuration -> [Transition] -> [Configuration]
-final_configurations (state, "", stack) _ = [(state, "", stack)]
+final_configurations (state, "", stack) ts | final == [] = [(state, "", stack)]
+                                           | otherwise = final
+                                           where final = do_transitions (state, "", stack) ts
 final_configurations c ts = concat (map (\confs -> final_configurations confs ts) (do_transitions c ts))
 
 contains :: Eq a => [a] -> a -> Bool
